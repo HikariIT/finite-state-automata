@@ -32,6 +32,9 @@ class TransitionFunction:
         self.state_map[state.name] = state
         self.transition_map[state.name] = {}
 
+    def set_transitions_for_state(self, state: State, targets: List[Set[str]] | List[str]):
+        pass
+
 
 class DeterministicTransitionFunction(TransitionFunction):
 

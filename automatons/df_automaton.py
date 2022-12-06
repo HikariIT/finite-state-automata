@@ -1,73 +1,75 @@
-import itertools
 import math
 
-import networkx as nx
-from networkx.drawing.nx_agraph import write_dot
+from typing import List
 
-from typing import Set, List
-
-from automatons.automaton import Automaton
-from automatons.exceptions.exceptions import InvalidStateError, InvalidSymbolError
+from automatons.abstract_automaton import AbstractAutomaton
 from automatons.structures.state import State
-from automatons.structures.transition_function import TransitionFunction, DeterministicTransitionFunction
+from automatons.structures.transition_function import DeterministicTransitionFunction
 
 
-class DFA(Automaton):
+class DFA(AbstractAutomaton):
 
     transition_function: DeterministicTransitionFunction
 
-    def __init__(self, states: Set[State], symbols: List[str], start_state: State = None,
-                 accept_states: Set[State] = None):
+    def __init__(self, symbols: List[str]):
 
-        super().__init__()
-
-        self.states = states
-        self.symbols = symbols
+        super().__init__(symbols)
         self.transition_function = DeterministicTransitionFunction(self.states, self.symbols)
-        self.start_state = start_state
-        self.accept_states = set() if accept_states is None else accept_states
 
-    def add_state(self, name: str, transition_targets: List[str], is_starting: bool = False, is_accepting: bool = False) -> State:
+    def add_state(self, name: str, transition_targets: List[str], is_starting: bool = False,
+                  is_accepting: bool = False) -> State:
+        """
+        Adds a new state to the automaton
 
-        # Create new state and verify if it's starting
-        new_state = State(name, is_starting, is_accepting)
-        if new_state.is_starting:
-            if self.start_state is not None:
-                raise InvalidStateError(f"Automaton can't have more than one start state")
-            else:
-                self.start_state = new_state
+        Transition targets must be given in the same order as symbols in the language. For example,
+        if symbols are ['0', '1'], then the first element of the list must be the target of transition '0'.
 
-        # Saving states in self.states and adding transitions
-        self.states.add(new_state)
-        self.transition_function.add_state(new_state)
-        self.transition_function.set_transitions_for_state(new_state, transition_targets)
-        return new_state
+        Args:
+            name (str):
+                State name
+            transition_targets (List[str]]):
+                List of sets of states achieved from this state with each symbol
+            is_starting (bool, optional):
+                Sets the state as starting, defaults to False
+            is_accepting (bool, optional):
+                Sets the state as accepting, defaults to False
 
-    def get_resulting_state(self, word: str):
-        # Word verification
-        word = word.strip()
-        for symbol in word:
-            if symbol not in self.symbols:
-                raise InvalidSymbolError(f"Invalid symbol '{symbol}' in word '{word}'")
+        Returns:
+            New state created by this method
 
+        Raises:
+            InvalidStateError: If there is already a starting state in the Automaton
+        """
+        return super().add_state(name, transition_targets, is_starting, is_accepting)
+
+    def get_resulting_state(self, word: str) -> State:
+        """
+        Get state in which automaton finishes its run after given input
+
+        Args:
+            word (str):
+                Word built with symbols accepted by the automaton
+
+        Returns:
+            State in which the automaton finishes its run after given input
+
+        Raises:
+            InvalidStateError:
+                If there is no starting state
+            InvalidSymbolError:
+                If the automaton encounters a symbol not present in states attribute
+        """
+        super().verify_word(word)
         current_state = self.start_state
         for symbol in word:
             current_state = self.transition_function(current_state, symbol)
 
         return current_state
 
-    def accepts_word(self, word: str):
-        return self.get_resulting_state(word).is_accepting
-
-    def get_all_accepted_words(self, max_length: int):
-        accepted_words = []
-        for length in range(1, max_length + 1):
-            for word in map(lambda x: ''.join(x), itertools.product(*[self.symbols for _ in range(length)])):
-                if self.accepts_word(word):
-                    accepted_words.append(word)
-        return accepted_words
-
     def print(self):
+        """
+        Prints table representation of the automaton
+        """
         if len(self.states) == 0:
             raise Exception("Can't print table for empty automaton")
 
