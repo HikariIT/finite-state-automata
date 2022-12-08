@@ -17,19 +17,22 @@ class NFA(AbstractAutomaton):
     """
 
     transition_function: NonDeterministicTransitionFunction
+    null_state: State
 
     """
     Attributes:
         states (Set[State]): 
             Finite set of automaton states
         symbols (List[str]): 
-            Finite set of input symbols
+            List of input symbols
         transition_function (NonDeterministicTransitionFunction): 
             Function containing all transitions from one state to others using given symbol
         start_state (State | None): 
             Starting state of the automaton
         accept_states (Set[State]): 
             Set of states which are accepted by the automaton
+        null_state (State):
+            State which represents empty set
     """
 
     def __init__(self, symbols: List[str]):
@@ -37,10 +40,12 @@ class NFA(AbstractAutomaton):
         Non-deterministic Finite Automaton (NFA) constructor
 
         Args:
-            symbols (List[str]): list of all symbols used by the automaton
+            symbols (List[str]):
+                List of all symbols used by the automaton
         """
         super().__init__(symbols)
         self.transition_function = NonDeterministicTransitionFunction(self.states, self.symbols)
+        self.null_state = self.add_state("Ø", [set() for _ in self.symbols])
 
     def add_state(self, name: str, transition_targets: List[Set[str]], is_starting: bool = False,
                   is_accepting: bool = False) -> State:
@@ -85,7 +90,7 @@ class NFA(AbstractAutomaton):
             InvalidSymbolError:
                 If the automaton encounters a symbol not present in states attribute
         """
-        super().verify_word(word)
+        self.verify_word(word)
         current_states = {self.start_state}
         for symbol in word:
             current_states = self.get_next_state(current_states, symbol)
@@ -119,7 +124,18 @@ class NFA(AbstractAutomaton):
     def accepts_word(self, word: str):
         return any(state.is_accepting for state in self.get_resulting_state(word))
 
-    def convert_to_dfa(self, map_states=True) -> DFA:
+    def convert_to_dfa(self, map_states: bool = True) -> DFA:
+        """
+        Converts NFA to DFA
+
+        Args:
+            map_states (bool):
+                If True, state names in DFA are replaced with convention s_{i}, where i is an integer starting from 0.
+                If False, state names are left unchanged.
+
+        Returns:
+            Resulting DFA
+        """
         dfa = DFA(self.symbols)
 
         visited = []
@@ -128,6 +144,8 @@ class NFA(AbstractAutomaton):
 
         while len(states_to_check) > 0:
             state = states_to_check.pop(0)
+            if state in visited:
+                continue
             visited.append(state)
             resulting_states = [self.get_next_state(state, symbol) for symbol in self.symbols]
             for resulting_state in resulting_states:
@@ -136,27 +154,28 @@ class NFA(AbstractAutomaton):
 
             transitions.append([state, *resulting_states])
 
-        state_map = {str(state): self._get_raw_name(state) for state in visited}
+        state_map = {tuple(sorted(state, key=lambda x: x.name)): self._get_raw_name(state) for state in visited}
         if map_states:
-            state_map = {str(state): f"s{i}" for i, state in enumerate(visited)}
-        print(state_map)
+            state_map = {tuple(sorted(state, key=lambda x: x.name)): f"s{i}" for i, state in enumerate(visited)}
 
         for i, transition in enumerate(transitions):
-            dfa.add_state(state_map[str(transition[0])],
-                          [state_map[str(target)] for target in transition[1:]],
+            dfa.add_state(state_map[tuple(sorted(transition[0], key=lambda x: x.name))],
+                          [state_map[tuple(sorted(target, key=lambda x: x.name))] for target in transition[1:]],
                           i == 0,
                           any(map(lambda x: x.is_accepting, transition[0])))
 
         return dfa
 
-    def print(self):
+    def print(self, title: str = "NF Automaton table"):
         """
         Prints table representation of the automaton
         """
         if len(self.states) == 0:
             raise Exception("Can't print table for empty automaton")
 
-        sorted_states = sorted(list(self.states), key=lambda x: x.name)
+        states = list(self.states)
+        states.remove(self.null_state)
+        sorted_states = sorted(states, key=lambda x: x.name)
 
         # Calculate max length of state and width of each column
         max_state_length = max(max(len(str(state)) for state in self.states), len("State"))
@@ -182,7 +201,6 @@ class NFA(AbstractAutomaton):
 
         # Create top title
         top_row = "=" * (len(header) - 1)
-        title = " NF Automaton table"
         space = len(header) - len(title) - 2
 
         if space > 2:

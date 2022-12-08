@@ -1,39 +1,68 @@
 from __future__ import annotations
 
-from typing import Dict, Set, FrozenSet, List, Tuple
+from abc import ABC, abstractmethod
+from typing import Dict, Set, List
 
-from automatons.exceptions.exceptions import TransitionFunctionError
+from automatons.exceptions.exceptions import TransitionFunctionError, InvalidStateError
 from automatons.structures.state import State
 
 
-class TransitionFunction:
+class TransitionFunction(ABC):
+    """
+    Abstract class representing a transition function
+    """
 
-    # Set of all automaton states
     states: Set[State]
-
-    # Set of all symbols of automaton
-    symbols: FrozenSet[str]
-
-    # Map of all transitions, the function itself
+    symbols: List[str]
     transition_map: Dict[str, Dict[str, str | Set[str]]]
-
-    # Map of states and their names
     state_map: Dict[str, State]
 
-    def __init__(self, states, symbols):
+    """
+    Attributes:
+        states (Set[State]): 
+            Finite set of automaton states
+        symbols (List[str]): 
+            List of input symbols
+        transition_map (Dict[str, Dict[str, str | Set[str]]]): 
+            Dictionary of transitions in which keys are state names and values are dictionaries of symbol 
+            and their respective targets
+        state_map (Dict[str, State])
+            Dictionary of state names and their instances
+    """
+
+    def __init__(self, states: Set[State], symbols: List[str]):
+        """
+        Constructor of abstract transition function
+
+        Args:
+            states (Set[State]):
+                Finite set of automaton states
+            symbols (List[str]):
+                List of input symbols
+        """
         self.symbols = symbols
         self.states = states
         self.state_map = {}
         self.transition_map = {}
         for state in states:
-            self.transition_map[state] = {}
+            self.transition_map[state.name] = {}
 
     def add_state(self, state: State):
+        """
+        Adds a new state to transition function
+
+        Args:
+            state (State):
+                State to add
+        """
         self.state_map[state.name] = state
         self.transition_map[state.name] = {}
 
+    @abstractmethod
     def set_transitions_for_state(self, state: State, targets: List[Set[str]] | List[str]):
         pass
+
+# TODO: Add comments to Transition functions (deterministic and non-deterministic)
 
 
 class DeterministicTransitionFunction(TransitionFunction):
@@ -60,24 +89,6 @@ class DeterministicTransitionFunction(TransitionFunction):
         for symbol, target in zip(self.symbols, targets):
             self.transition_map[state.name][symbol] = target
 
-    def set_transitions_for_all_states(self, states: List[State], targets: List[List[str]]):
-        for state, state_targets in zip(states, targets):
-            for symbol, target in zip(self.symbols, state_targets):
-                self.transition_map[state.name][symbol] = target
-
-    def get_edges(self) -> List[Tuple[str, str, Dict[str, str]]]:
-        edges = []
-        for state in self.states:
-            for symbol in self.transition_map[state.name]:
-                edges.append((state.name, self.transition_map[state.name][symbol], {'s': symbol}))
-        return edges
-
-# -----------------------------
-# Below code is not updated yet
-# TODO: Change to StateMap
-# -----------------------------
-
-
 class NonDeterministicTransitionFunction(TransitionFunction):
 
     transition_map: Dict[str, Dict[str, Set[str]]]
@@ -92,7 +103,7 @@ class NonDeterministicTransitionFunction(TransitionFunction):
         state_names = self.transition_map[state.name][symbol]
         for state_name in state_names:
             if state_name not in self.state_map:
-                raise KeyError(f"State with name {state_name} is not defined")
+                raise InvalidStateError(f"State with name {state_name} is not defined")
         return set(self.state_map[name] for name in state_names)
 
     def set_transition(self, state: State, symbol: str, target: Set[str]):
@@ -101,13 +112,3 @@ class NonDeterministicTransitionFunction(TransitionFunction):
     def set_transitions_for_state(self, state: State, targets: List[Set[str]]):
         for symbol, target in zip(self.symbols, targets):
             self.transition_map[state.name][symbol] = target
-
-    def set_transitions_for_all_states(self, states: List[State], targets: List[List[Set[str]]]):
-        for state, state_targets in zip(states, targets):
-            for symbol, target in zip(self.symbols, state_targets):
-                self.transition_map[state.name][symbol] = target
-
-
-class NonDeterministicEpsilonTransitionFunction(TransitionFunction):
-
-    state_map: Dict[State, Dict[str, Set[State]]]

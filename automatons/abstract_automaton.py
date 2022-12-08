@@ -4,7 +4,7 @@ import itertools
 from typing import Set, List
 from abc import ABC, abstractmethod
 
-from automatons.exceptions.exceptions import InvalidStateError, InvalidSymbolError
+from automatons.exceptions.exceptions import InvalidStateError, InvalidSymbolError, InvalidNumberOfTargets
 from automatons.structures.state import State
 from automatons.structures.transition_function import TransitionFunction
 
@@ -22,12 +22,16 @@ class AbstractAutomaton(ABC):
 
     """
     Attributes:
-        states (Set[State]): Finite set of automaton states
-        symbols (List[str]): Finite set of input symbols
-        transition_function (NonDeterministicTransitionFunction): Function containing all transitions from one state 
-            to others using given symbol
-        start_state (State | None): Starting state of the automaton
-        accept_states (Set[State]): Set of states which are accepted by the automaton
+        states (Set[State]): 
+            Finite set of automaton states
+        symbols (List[str]): 
+            List of input symbols
+        transition_function (NonDeterministicTransitionFunction): 
+            Function containing all transitions from one state to others using given symbol
+        start_state (State | None): 
+            Starting state of the automaton
+        accept_states (Set[State]): 
+            Set of states which are accepted by the automaton
     """
 
     def __init__(self, symbols: List[str]):
@@ -47,6 +51,10 @@ class AbstractAutomaton(ABC):
                 raise InvalidStateError(f"Automaton can't have more than one start state")
             else:
                 self.start_state = new_state
+
+        if len(transition_targets) != len(self.symbols):
+            raise InvalidNumberOfTargets(f"Invalid number of targets: {len(transition_targets)} provided, "
+                                         f"{len(self.symbols)} expected")
 
         self.states.add(new_state)
         self.transition_function.add_state(new_state)

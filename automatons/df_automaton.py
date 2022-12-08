@@ -8,11 +8,34 @@ from automatons.structures.transition_function import DeterministicTransitionFun
 
 
 class DFA(AbstractAutomaton):
+    """
+    Class to represent Deterministic Finite Automaton (DFA)
+    """
 
     transition_function: DeterministicTransitionFunction
 
-    def __init__(self, symbols: List[str]):
+    """
+    Attributes:
+        states (Set[State]): 
+            Finite set of automaton states
+        symbols (List[str]): 
+            List of input symbols
+        transition_function (NonDeterministicTransitionFunction): 
+            Function containing all transitions from one state to others using given symbol
+        start_state (State | None): 
+            Starting state of the automaton
+        accept_states (Set[State]): 
+            Set of states which are accepted by the automaton
+    """
 
+    def __init__(self, symbols: List[str]):
+        """
+        Deterministic Finite Automaton (DFA) constructor
+
+        Args:
+            symbols (List[str]):
+                List of all symbols used by the automaton
+        """
         super().__init__(symbols)
         self.transition_function = DeterministicTransitionFunction(self.states, self.symbols)
 
@@ -78,7 +101,13 @@ class DFA(AbstractAutomaton):
         # Calculate max length of state and width of each column
         max_state_length = max(max(len(str(state)) for state in self.states), len("State"))
         pad_left = max_state_length + 2
-        symbol_lengths = [max(pad_left - 2, len(symbol) + 1) for symbol in self.symbols]
+        symbol_lengths = [
+            max(
+                max(len(state.name) for state in self.states) + 1,
+                len(symbol) + 1
+            )
+            for symbol in self.symbols
+        ]
 
         # Create Divider
         divider = "+" + "-" * (pad_left + 1)
@@ -114,3 +143,18 @@ class DFA(AbstractAutomaton):
                 row_string += self.transition_function(state, symbol).name.ljust(length) + '| '
             print(row_string, divider, sep="\n")
         print("")
+
+    # TODO: Implement minimization
+
+    def minimize(self):
+        self._remove_unreachable_states()
+        pass
+
+    def _remove_unreachable_states(self):
+        pass
+
+    def _split_and_merge(self):
+        pass
+
+    def _replace_state(self, state_from: State, state_to: State):
+        pass
