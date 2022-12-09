@@ -58,6 +58,10 @@ class TransitionFunction(ABC):
         self.state_map[state.name] = state
         self.transition_map[state.name] = {}
 
+    def remove_state(self, state: State):
+        self.state_map.pop(state.name)
+        self.transition_map.pop(state.name)
+
     @abstractmethod
     def set_transitions_for_state(self, state: State, targets: List[Set[str]] | List[str]):
         pass
@@ -72,14 +76,15 @@ class DeterministicTransitionFunction(TransitionFunction):
     def __init__(self, states, symbols):
         super().__init__(states, symbols)
 
-    def __call__(self, state: State, symbol: str) -> State:
+    def __call__(self, state: State, symbol: str) -> State | None:
         if symbol not in self.transition_map[state.name]:
             raise TransitionFunctionError(
                 f"DFA Transition function doesn't define transition from state '{state}' with symbol '{symbol}'"
             )
         state_name = self.transition_map[state.name][symbol]
         if state_name not in self.state_map:
-            raise KeyError(f"State with name {state_name} is not defined")
+            return None
+            # raise KeyError(f"State with name {state_name} is not defined")
         return self.state_map[state_name]
 
     def set_transition(self, state: State, symbol: str, target: str):
@@ -88,6 +93,7 @@ class DeterministicTransitionFunction(TransitionFunction):
     def set_transitions_for_state(self, state: State, targets: List[str]):
         for symbol, target in zip(self.symbols, targets):
             self.transition_map[state.name][symbol] = target
+
 
 class NonDeterministicTransitionFunction(TransitionFunction):
 

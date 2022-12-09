@@ -1,6 +1,6 @@
 import math
 
-from typing import List
+from typing import List, FrozenSet, Set
 
 from automatons.abstract_automaton import AbstractAutomaton
 from automatons.structures.state import State
@@ -144,17 +144,111 @@ class DFA(AbstractAutomaton):
             print(row_string, divider, sep="\n")
         print("")
 
-    # TODO: Implement minimization
-
     def minimize(self):
         self._remove_unreachable_states()
+        non_distinguishable = self._hopcroft_non_distinguishable()
+        for i, equivalence_class in enumerate(filter(lambda x: len(x) > 1, non_distinguishable)):
+            self._merge_states(i + 1, equivalence_class)
         pass
 
     def _remove_unreachable_states(self):
-        pass
 
-    def _split_and_merge(self):
-        pass
+        # Code adapted from https://en.wikipedia.org/wiki/DFA_minimization
+        reachable_states = {self.start_state}
+        new_states = {self.start_state}
+        while True:
+            temp = set()
+            for state in new_states:
+                for symbol in self.symbols:
+                    temp.add(self.transition_function(state, symbol))
+            new_states = temp.difference(reachable_states)
+            reachable_states.update(new_states)
+            if len(new_states) == 0:
+                break
+        unreachable_states = self.states.difference(reachable_states)
+        for state in unreachable_states:
+            self.remove_state(state)
+        if len(unreachable_states) > 0:
+            print(f"Removing unreachable states: {unreachable_states} ...")
+        else:
+            print(f"No unreachable states found...")
 
-    def _replace_state(self, state_from: State, state_to: State):
-        pass
+    def _hopcroft_non_distinguishable(self) -> Set[FrozenSet[State]]:
+
+        # Code adapted from https://en.wikipedia.org/wiki/DFA_minimization
+        p: Set[FrozenSet[State]] = {frozenset({self.start_state}),
+                                    frozenset(self.states.difference({self.start_state}))}
+        w: Set[FrozenSet[State]] = {frozenset({self.start_state}),
+                                    frozenset(self.states.difference({self.start_state}))}
+
+        self.print()
+
+        while len(w) > 0:
+            a = w.pop()
+            for symbol in self.symbols:
+                x = frozenset(state for state in self.states if self.transition_function(state, symbol) in a)
+
+                add_to_p: Set[FrozenSet[State]] = set()
+                add_to_w: Set[FrozenSet[State]] = set()
+
+                remove_from_p: Set[FrozenSet[State]] = set()
+                remove_from_w: Set[FrozenSet[State]] = set()
+
+                for y in p:
+                    inter = frozenset(x.intersection(y))
+                    diff = frozenset(y.difference(x))
+
+                    if len(inter) > 0 and len(diff) > 0:
+
+                        remove_from_p.add(y)
+                        add_to_p.add(inter)
+                        add_to_p.add(diff)
+
+                        if y in w:
+                            remove_from_w.add(y)
+                            add_to_w.add(inter)
+                            add_to_w.add(diff)
+
+                        else:
+                            if len(inter) <= len(diff):
+                                add_to_w.add(inter)
+                            else:
+                                add_to_w.add(diff)
+
+                p.difference_update(remove_from_p)
+                p.update(add_to_p)
+
+                w.difference_update(remove_from_w)
+                w.update(add_to_w)
+
+        return p
+
+    def _merge_states(self, index: int, states: FrozenSet[State]):
+
+        state_name = f"r{index}"
+
+        # Create transitions
+        state = list(states)[0]
+        transition_targets = [self.transition_function(state, symbol) for symbol in self.symbols]
+        fixed_targets = []
+        for target in transition_targets:
+            if target in states:
+                fixed_targets.append(state_name)
+
+        # Remove states
+        for state in states:
+            self.remove_state(state)
+
+        # Change all transitions leading to merged states
+        for symbol in self.symbols:
+            for state in self.states:
+                transition_result = self.transition_function(state, symbol)
+                if not transition_result:
+                    self.transition_function.set_transition(state, symbol, state_name)
+
+        merged_state = self.add_state(state_name,
+                                      fixed_targets,
+                                      any(map(lambda x: x.is_starting, states)),
+                                      any(map(lambda x: x.is_accepting, states))
+                                      )
+

@@ -61,6 +61,13 @@ class AbstractAutomaton(ABC):
         self.transition_function.set_transitions_for_state(new_state, transition_targets)
         return new_state
 
+    def remove_state(self, state: State):
+        if self.start_state == state:
+            self.start_state = None
+
+        self.states.remove(state)
+        self.transition_function.remove_state(state)
+
     def accepts_word(self, word: str):
         """
         Verifies if the automaton accepts a given word

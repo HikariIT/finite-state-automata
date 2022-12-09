@@ -35,11 +35,14 @@ dfa.add_state("q_1", ["q_1", "q_0"], is_accepting=True)
 dfa.print()
 """
 
+
 enfa = ENFA(["0", "1"])
 q_1 = enfa.add_state("q_1", [{"q_1"}, {"q_1", "q_2"}, set()], is_starting=True)
 q_2 = enfa.add_state("q_2", [{"q_3"}, set(), {"q_3"}])
 q_3 = enfa.add_state("q_3", [set(), {"q_4"}, set()])
 q_4 = enfa.add_state("q_4", [{"q_4"}, {"q_4"}, set()], is_accepting=True)
 enfa.print()
-dfa = enfa.convert_to_dfa(False)
+dfa = enfa.convert_to_dfa()
+dfa.add_state("q_7", ["{q_1}", "{q_1}"])
+dfa.minimize()
 dfa.print()
