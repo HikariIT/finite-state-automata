@@ -37,8 +37,8 @@ class Earley:
                 self.scanning(situation)
 
             self.add_situation_to_processed(situation)
-            self.print_processed()
 
+        self.print_processed()
         return len(word) in self.processed and EarleySituation(self.grammar.start_symbol, self.grammar.start_symbol[0],
                                                                0, len(word), 1) in self.processed[len(word)]
 
@@ -72,7 +72,10 @@ class Earley:
         return situation in self.processed[situation.i]
 
     def print_processed(self):
-        print("----------------------------------------------------------------")
+        print("-------------------------------------------------------------" * 3)
         for key, value in self.processed.items():
-            print(f"{key}: {value}")
-        print("----------------------------------------------------------------")
+            print(f"{key}: ", end="")
+            for situation in value:
+                print(str(situation).ljust(10), end="\t")
+            print()
+        print("-------------------------------------------------------------" * 3)

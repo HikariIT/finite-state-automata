@@ -27,16 +27,18 @@ class Grammar:
     def __repr__(self):
         ret = ""
 
-        ret += "+-------------------------------------------------------\n"
-        ret += "| Grammar\n"
-        ret += "+-------------------------------------------------------\n"
-        ret += "| Non-terminal symbols: ".ljust(30) + repr(self.non_terminal) + "\n"
-        ret += "| Terminal symbols: ".ljust(30) + repr(self.terminal) + "\n"
-        ret += "| Starting symbol: ".ljust(30) + self.start_symbol + "\n"
-        ret += "+-------------------------------------------------------\n"
-        ret += "| Productions\n"
-        ret += "| " + repr(self.productions) + "\n"
-        ret += "+-------------------------------------------------------\n"
+        dashes = max(len(repr(self.productions)) + 2, 30 + len(repr(self.terminal)) + 2)
+
+        ret += "+" + "-" * dashes + "+\n"
+        ret += ("| Grammar").ljust(dashes + 1) + "|\n"
+        ret += "+" + "-" * dashes + "+\n"
+        ret += ("| Non-terminal symbols: ".ljust(30) + repr(self.non_terminal)).ljust(dashes + 1) + "|\n"
+        ret += ("| Terminal symbols: ".ljust(30) + repr(self.terminal)).ljust(dashes + 1) + "|\n"
+        ret += ("| Starting symbol: ".ljust(30) + self.start_symbol).ljust(dashes + 1) + "|\n"
+        ret += "+" + "-" * dashes + "+\n"
+        ret += "| Productions".ljust(dashes + 1) + "|\n"
+        ret += ("| " + repr(self.productions)).ljust(dashes + 1) + "|\n"
+        ret += "+" + "-" * dashes + "+\n"
 
         return ret
 

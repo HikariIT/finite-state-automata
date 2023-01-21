@@ -16,7 +16,7 @@ class EarleySituation:
         self.p = p
 
     def __repr__(self):
-        return f"{self.start}🠖{self.target[:self.p]}⚫{self.target[self.p:]} [{self.h}, {self.i}]"
+        return f"({self.start}🠖{self.target[:self.p]}⚫{self.target[self.p:]}".ljust(10) + f"[{self.h}, {self.i}])"
 
     def __key(self):
         return self.start, self.target, self.h, self.i, self.p
